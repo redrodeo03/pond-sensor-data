@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .dashboard {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .sensor {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: calc(33% - 20px);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .sensor:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .sensor h2 {
+            margin-top: 0;
+            color: #34495e;
+            font-size: 1.5em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .normal {
+            color: #27ae60;
+        }
+        .alert {
+            color: #e74c3c;
+        }
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .status-text {
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        #timestamp {
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .sensor {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sensor Dashboard</h1>
+        <div class="dashboard">
+            <div class="sensor" id="turbidity">
+                <h2>Turbidity</h2>
+                <div class="value" id="turbidity-value"></div>
+                <div>
+                    <span class="status-indicator" id="turbidity-indicator"></span>
+                    <span class="status-text" id="turbidity-status"></span>
+                </div>
+            </div>
+            <div class="sensor" id="tds">
+                <h2>TDS</h2>
+                <div class="value" id="tds-value"></div>
+                <div>
+                    <span class="status-indicator" id="tds-indicator"></span>
+                    <span class="status-text" id="tds-status"></span>
+                </div>
+            </div>
+            <div class="sensor" id="ph">
+                <h2>pH</h2>
+                <div class="value" id="ph-value"></div>
+                <div>
+                    <span class="status-indicator" id="ph-indicator"></span>
+                    <span class="status-text" id="ph-status"></span>
+                </div>
+            </div>
+        </div>
+        <div id="timestamp"></div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
