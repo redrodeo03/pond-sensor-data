@@ -105,4 +105,4 @@ def handle_connect():
 
 if __name__ == '__main__':
     threading.Thread(target=send_sensor_data, daemon=True).start()
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
