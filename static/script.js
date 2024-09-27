@@ -3,6 +3,7 @@ const socket = io();
 const sensors = ['turbidity', 'tds', 'ph'];
 
 function updateSensorValue(sensor, data) {
+    const card = document.getElementById(sensor);
     const valueElement = document.getElementById(`${sensor}-value`);
     const indicatorElement = document.getElementById(`${sensor}-indicator`);
     const statusElement = document.getElementById(`${sensor}-status`);
@@ -10,15 +11,15 @@ function updateSensorValue(sensor, data) {
     if (data && typeof data.value === 'number') {
         valueElement.textContent = data.value.toFixed(2);
         
-        valueElement.classList.remove('normal', 'alert');
-        valueElement.classList.add(data.status);
-
-        indicatorElement.style.backgroundColor = data.status === 'normal' ? '#27ae60' : '#e74c3c';
-        statusElement.textContent = data.status;
+        card.className = `sensor-card ${data.status}`;
+        valueElement.className = `value ${data.status}`;
+        indicatorElement.className = `status-indicator ${data.status}`;
+        statusElement.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
     } else {
         valueElement.textContent = 'N/A';
-        valueElement.classList.remove('normal', 'alert');
-        indicatorElement.style.backgroundColor = '#7f8c8d';
+        card.className = 'sensor-card no-data';
+        valueElement.className = 'value no-data';
+        indicatorElement.className = 'status-indicator no-data';
         statusElement.textContent = 'No data';
     }
 }
@@ -49,10 +50,4 @@ socket.on('sensor_update', function(data) {
     } else {
         console.error('Received invalid data structure:', data);
     }
-});
-
-// Add smooth transitions for value changes
-sensors.forEach(sensor => {
-    const valueElement = document.getElementById(`${sensor}-value`);
-    valueElement.style.transition = 'color 0.3s ease';
 });
