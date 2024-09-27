@@ -1,3 +1,5 @@
-Flask==2.0.1
-Flask-SocketIO==5.1.1
-requests==2.26.0
+Flask==3.0.3
+Flask-SocketIO==5.3.7
+requests==2.32.3
+python-socketio==5.11.4
+gunicorn==21.2.0
