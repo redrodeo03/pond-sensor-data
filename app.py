@@ -2,16 +2,14 @@ from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
 import requests
 from datetime import datetime
-import time
-import threading
+import os
 import logging
 
-app = Flask(__name__)
-socketio = SocketIO(app)
+logging.basicConfig(level=logging.DEBUG)
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')
+socketio = SocketIO(app)
 
 # ThingSpeak channel details
 CHANNEL_ID = '2617252'
@@ -47,62 +45,39 @@ def set_thresholds():
 
 def fetch_thingspeak_data():
     data = {}
-    latest_timestamp = None
     for field, sensor in FIELDS.items():
-        url = f'https://api.thingspeak.com/channels/{CHANNEL_ID}/fields/{field}.json?api_key={READ_API_KEY}&results=2'
+        url = f'https://api.thingspeak.com/channels/{CHANNEL_ID}/fields/{field}.json?api_key={READ_API_KEY}&results=1'
         try:
             response = requests.get(url)
-            response.raise_for_status()  # Raises an HTTPError for bad responses
+            response.raise_for_status()
             channel_data = response.json()
+            logging.debug(f"Raw data for {sensor}: {channel_data}")
             if 'feeds' in channel_data and len(channel_data['feeds']) > 0:
-                latest_feed = channel_data['feeds'][-1]
-                value = latest_feed.get(f'field{field}')
+                value = channel_data['feeds'][0].get(f'field{field}')
                 if value is not None:
                     data[sensor] = float(value)
-                    timestamp = latest_feed.get('created_at')
-                    if timestamp:
-                        if latest_timestamp is None or timestamp > latest_timestamp:
-                            latest_timestamp = timestamp
+                    logging.debug(f"Processed data for {sensor}: {data[sensor]}")
                 else:
-                    logger.warning(f"No data for field {field} in the latest feed")
+                    logging.warning(f"No value found for {sensor}")
             else:
-                logger.warning(f"No feeds found for field {field}")
-        except requests.RequestException as e:
-            logger.error(f"Error fetching data for field {field}: {str(e)}")
-        except ValueError as e:
-            logger.error(f"Error parsing data for field {field}: {str(e)}")
-        except KeyError as e:
-            logger.error(f"Unexpected data structure for field {field}: {str(e)}")
-    
-    if latest_timestamp:
-        data['timestamp'] = latest_timestamp
+                logging.warning(f"No feeds found for {sensor}")
+        except Exception as e:
+            logging.error(f"Error fetching data for {sensor}: {str(e)}")
+    logging.debug(f"Final processed data: {data}")
     return data
 
-def get_data_with_status(data):
-    sensors_data = {}
+@socketio.on('request_data')
+def handle_request_data():
+    data = fetch_thingspeak_data()
     for sensor, value in data.items():
-        if sensor != 'timestamp':
-            sensors_data[sensor] = {
-                'value': value,
-                'status': 'normal' if thresholds[sensor]['min'] <= value <= thresholds[sensor]['max'] else 'alert'
-            }
-    return {
-        'timestamp': data.get('timestamp', datetime.now().isoformat()),
-        'sensors': sensors_data
-    }
-
-def send_sensor_data():
-    while True:
-        data = fetch_thingspeak_data()
-        if data:
-            data_with_status = get_data_with_status(data)
-            socketio.emit('sensor_update', data_with_status)
-        time.sleep(15)  # ThingSpeak's free plan allows 15 seconds between API calls
-
-@socketio.on('connect')
-def handle_connect():
-    logger.info('Client connected')
+        data[sensor] = {
+            'value': value,
+            'status': 'normal' if thresholds[sensor]['min'] <= value <= thresholds[sensor]['max'] else 'alert'
+        }
+    result = {'timestamp': datetime.now().isoformat(), 'sensors': data}
+    logging.debug(f"Emitting data: {result}")
+    socketio.emit('sensor_update', result)
 
 if __name__ == '__main__':
-    threading.Thread(target=send_sensor_data, daemon=True).start()
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
