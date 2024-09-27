@@ -4,40 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sensor Dashboard</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .dashboard { display: flex; flex-wrap: wrap; justify-content: space-around; }
+        .sensor-card { 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 10px; 
+            width: 200px; 
+            text-align: center;
+        }
+        .value { font-size: 24px; font-weight: bold; }
+        .normal { color: green; }
+        .alert { color: red; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Sensor Dashboard</h1>
-        <div class="dashboard">
-            <div id="turbidity" class="sensor-card">
-                <h2>pH</h2>
-                <div id="turbidity-value" class="value"></div>
-                <div class="status">
-                    <span id="turbidity-indicator" class="status-indicator"></span>
-                    <span id="turbidity-status" class="status-text"></span>
-                </div>
-            </div>
-            <div id="tds" class="sensor-card">
-                <h2>TDS</h2>
-                <div id="tds-value" class="value"></div>
-                <div class="status">
-                    <span id="tds-indicator" class="status-indicator"></span>
-                    <span id="tds-status" class="status-text"></span>
-                </div>
-            </div>
-            <div id="ph" class="sensor-card">
-                <h2>Turbidity</h2>
-                <div id="ph-value" class="value"></div>
-                <div class="status">
-                    <span id="ph-indicator" class="status-indicator"></span>
-                    <span id="ph-status" class="status-text"></span>
-                </div>
-            </div>
+    <h1>Sensor Dashboard</h1>
+    <div class="dashboard">
+        <div id="ph" class="sensor-card">
+            <h2>pH</h2>
+            <div class="value"></div>
+            <div class="status"></div>
         </div>
-        <div id="timestamp"></div>
+        <div id="tds" class="sensor-card">
+            <h2>TDS</h2>
+            <div class="value"></div>
+            <div class="status"></div>
+        </div>
+        <div id="turbidity" class="sensor-card">
+            <h2>Turbidity</h2>
+            <div class="value"></div>
+            <div class="status"></div>
+        </div>
     </div>
+    <div id="timestamp"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="/static/script.js"></script>
+    <script>
+        const socket = io();
+
+        function updateSensorValue(sensor, data) {
+            try {
+                const card = document.getElementById(sensor);
+                if (!card) {
+                    console.error(`Element not found for sensor: ${sensor}`);
+                    return;
+                }
+                const valueElement = card.querySelector('.value');
+                const statusElement = card.querySelector('.status');
+
+                if (valueElement && statusElement) {
+                    valueElement.textContent = data.value.toFixed(2);
+                    valueElement.className = `value ${data.status}`;
+                    statusElement.textContent = data.status;
+                } else {
+                    console.error(`Value or status element not found for sensor: ${sensor}`);
+                }
+            } catch (error) {
+                console.error(`Error updating sensor ${sensor}:`, error);
+            }
+        }
+
+        function updateTimestamp(timestamp) {
+            try {
+                const date = new Date(timestamp);
+                document.getElementById('timestamp').textContent = `Last updated: ${date.toLocaleString()}`;
+            } catch (error) {
+                console.error('Error updating timestamp:', error);
+            }
+        }
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.emit('request_data');
+        });
+
+        socket.on('sensor_update', (data) => {
+            console.log('Received sensor update:', data);
+            if (data && data.sensors) {
+                for (const [sensor, sensorData] of Object.entries(data.sensors)) {
+                    updateSensorValue(sensor, sensorData);
+                }
+                updateTimestamp(data.timestamp);
+            } else {
+                console.error('Received invalid data structure:', data);
+            }
+        });
+
+        // Request new data every 15 seconds
+        setInterval(() => {
+            socket.emit('request_data');
+        }, 15000);
+    </script>
 </body>
 </html>
