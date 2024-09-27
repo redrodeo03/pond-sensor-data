@@ -5,7 +5,6 @@ from datetime import datetime
 import time
 import threading
 import logging
-import os
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -27,9 +26,9 @@ FIELDS = {
 
 # Thresholds
 thresholds = {
-    'turbidity': {'min': 0, 'max': 15},
-    'tds': {'min': 50, 'max': 600},
-    'ph': {'min': 6.4, 'max': 7.6}
+    'turbidity': {'min': 720, 'max': 740},
+    'tds': {'min': 114, 'max': 120},
+    'ph': {'min': 7.4, 'max': 7.6}
 }
 
 @app.route('/')
@@ -106,5 +105,4 @@ def handle_connect():
 
 if __name__ == '__main__':
     threading.Thread(target=send_sensor_data, daemon=True).start()
-    port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port)
+    socketio.run(app, debug=True)
